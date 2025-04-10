@@ -51,7 +51,7 @@ python Test.py
 ```
 
 This will:
-- To Load the model download it first froom here (`Model.pt`) [Link Text](https://drive.google.com/drive/folders/16qBV8uY6lktNvfJxM8nnmenUiQR9KP4y?usp=sharing)
+- To Load the model download it first froom here (`save it in a new folder named checkpoints`) [Link Text](https://drive.google.com/drive/folders/16qBV8uY6lktNvfJxM8nnmenUiQR9KP4y?usp=sharing)
 - Detect faces using `Detection.py`
 - Generate embeddings
 - Compare and output recognition results
