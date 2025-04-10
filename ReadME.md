@@ -1,7 +1,3 @@
-Sure! Here's a clean and attractive `README.md` tailored for your **FaceRecognition** GitHub repo:
-
----
-
 # 🔍 FaceRecognition
 
 A simple **Face Recognition** model built on PyTorch & PyTorch Lightning, fine-tuned for identifying and comparing celebrity faces via custom embeddings.
