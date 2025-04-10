@@ -45,10 +45,10 @@ class FaceRecognizer(pl.LightningModule):
 def load_model():
     """Load the trained model from lightning_logs/version_0"""
     # Find the checkpoint file
-    checkpoint_path = glob.glob("lightning_logs_1/version_0/checkpoints/*.ckpt")
+    checkpoint_path = glob.glob("./checkpoints/*.ckpt")
     
     if not checkpoint_path:
-        raise FileNotFoundError("No checkpoint found in lightning_logs/version_0/checkpoints/")
+        raise FileNotFoundError("No checkpoint found in /checkpoints/")
     
     # Use the latest checkpoint if multiple exist
     checkpoint_path = checkpoint_path[0]
