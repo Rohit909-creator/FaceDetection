@@ -1,1 +1,5 @@
 /checkpoints
+features.pt
+Labels.pt
+/__pycache__
+/lightning_logs

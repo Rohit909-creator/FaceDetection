@@ -4,6 +4,8 @@ from torch.utils.data import DataLoader, TensorDataset
 import pytorch_lightning as pl
 import torchvision
 
+val_losses = []
+train_losses = []
 # model = torchvision.models.vgg11()
 # print(model.named_modules)
 # torch.set_default_device('cuda')
@@ -28,11 +30,66 @@ class FaceRecognizer(pl.LightningModule):
         # y = y.cuda()
         out = self(x)
         l = self.loss_fn(out, y)
+        train_losses.append(l.item())
         self.log('train loss', l, prog_bar=True)
         return l
     
     def validation_step(self, batch, batch_idx):
         
+        x, y = batch
+        out = self(x)
+        l = self.loss_fn(out, y)
+        val_losses.append(l.item())
+        self.log("val_loss", l, prog_bar=True)        
+        return l
+    
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        return {
+            "optimizer": optimizer,
+            # "lr_scheduler": None,
+            # "monitor": "val_loss"
+        }
+        
+        
+        
+class MemoryBased(pl.LightningModule):
+    
+    def __init__(self, width, hieght, output_size, lr=0.01):
+        super().__init__()
+        self.lr = lr
+        self.cnn = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
+        self.maxpool = nn.MaxPool2d(kernel_size=2,stride=2, padding=0)
+        self.relu = nn.ReLU()
+        self.persistent_memory = PersistantMemory(width, hieght, 3)
+        self.restofthemodel = torchvision.models.vgg11()
+        self.restofthemodel.classifier[6] = nn.Linear(4096, output_size)
+        
+        self.loss_fn = nn.CrossEntropyLoss()
+        
+    def forward(self, X):
+        out = self.cnn(X)
+        out = self.maxpool(out)
+        out = self.relu(out)
+        memory = self.persistent_memory()
+        out = out - memory # This will be plotted and observed
+        # print('Shape of out:', out.shape)
+        out = self.restofthemodel(out)
+        return out
+    
+    def training_step(self, batch, batch_idx):
+            
+        x, y = batch
+        # x = x.cuda()
+        # y = y.cuda()
+        out = self(x)
+        l = self.loss_fn(out, y)
+        
+        self.log('train loss', l, prog_bar=True)
+        return l
+    
+    def validation_step(self, batch, batch_idx):
+            
         x, y = batch
         out = self(x)
         l = self.loss_fn(out, y)
@@ -47,6 +104,23 @@ class FaceRecognizer(pl.LightningModule):
             # "monitor": "val_loss"
         }
         
+        
+class PersistantMemory(pl.LightningModule):
+    
+    def __init__(self, width, hieght, channels=3, lr=0.01):
+        super().__init__()
+        self.x = nn.Parameter(torch.randn((1, channels, width, hieght)))
+        self.lr = lr
+        self.cnn = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1)
+        self.maxpool = nn.MaxPool2d(kernel_size=2,stride=2, padding=0)
+        self.relu = nn.ReLU()
+        
+    def forward(self):
+        
+        out = self.cnn(self.x)
+        out = self.maxpool(out)
+        out = self.relu(out)
+        return out        
 # Instead of setting default device globally, be explicit with device placement
 # Remove or comment out: torch.set_default_device('cuda')
 
@@ -82,8 +156,8 @@ def get_dataloaders(batch_size=64):
 # # Initialize and train model
 def train_model():
     # input_size, hidden_size, output_size = 256, 512, 2
-    model = FaceRecognizer(2562)
-
+    # model = FaceRecognizer(2562)
+    model = MemoryBased(160, 160 ,output_size=2562)
     train_loader, val_loader = get_dataloaders()
 
     trainer = pl.Trainer(max_epochs=500,
@@ -141,4 +215,16 @@ def train_model():
 #     print(f"Best model saved at: {best_model_path}")
 #     return best_model_path    
 if __name__ == "__main__":
+    
+    # train_dataloader, _ = get_dataloaders()
+    # print('Shape of data:', train_dataloader.dataset.tensors[0].shape)
     train_model()
+    import json
+    graph = {'train': train_losses, 'val':val_losses}
+    with open('Graph.json', 'w') as f:
+        s = json.dumps(graph)
+        f.write(s)
+    # model = MemoryBased(256, 256, 3)
+    # x = torch.randn((1, 3, 256, 256))
+    # y = model(x)
+    # print(y.shape)
